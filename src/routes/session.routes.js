@@ -1,9 +1,11 @@
-import { Router } from "express";
+import {Router} from "express";
+import {register} from "../controllers/session.controllers.js";
 
-import { getSessions } from "../controllers/session.controllers.js";
 
-const router = Router();
+const router=Router();
 
-router.get("/", getSessions);
+
+router.post("/register",register);
+
 
 export default router;
