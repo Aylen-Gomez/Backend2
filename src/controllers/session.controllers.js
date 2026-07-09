@@ -1,5 +1,5 @@
 import { registerUser, loginUser } from "../services/session.services.js";
-
+import { generateToken } from "../utils/jwt.js";
 
 export const register = async(req,res)=>{
 
@@ -66,6 +66,19 @@ export const login = async (req, res) => {
 
         const user = await loginUser(email, password);
 
+        const token = generateToken({
+            id: user._id,
+            email: user.email,
+            role: user.role
+        });
+
+        res.cookie("currentUser", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            maxAge: 3600000,
+            secure: process.env.NODE_ENV === "production"
+        });
+
         res.status(200).json({
             message: "Login exitoso",
             user: {
@@ -82,5 +95,25 @@ export const login = async (req, res) => {
         });
 
     }
+
+};
+
+export const current = async (req, res) => {
+
+    res.status(200).json({
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role
+    });
+
+};
+
+export const logout = async (req, res) => {
+
+    res.clearCookie("currentUser");
+
+    res.status(200).json({
+        message: "Logout exitoso"
+    });
 
 };
