@@ -1,11 +1,10 @@
-import {Router} from "express";
-import {register} from "../controllers/session.controllers.js";
+import { Router } from "express";
+import { register, login } from "../controllers/session.controllers.js";
 
+const router = Router();
 
-const router=Router();
+router.post("/register", register);
 
-
-router.post("/register",register);
-
+router.post("/login", login);
 
 export default router;

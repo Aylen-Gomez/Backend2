@@ -1,5 +1,5 @@
 import UserRepository from "../repositories/user.repositories.js";
-import { createHash } from "../utils.js";
+import { createHash, validatePassword } from "../utils/hash.js";
 
 
 const userRepository = new UserRepository();
@@ -29,5 +29,25 @@ export const registerUser = async(data)=>{
 
 
     return await userRepository.create(newUser);
+
+};
+
+export const loginUser = async (email, password) => {
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await userRepository.findByEmail(normalizedEmail);
+
+    if (!user) {
+        throw new Error("Credenciales inválidas");
+    }
+
+    const isValidPassword = await validatePassword(password, user.password);
+
+    if (!isValidPassword) {
+        throw new Error("Credenciales inválidas");
+    }
+
+    return user;
 
 };

@@ -1,10 +1,9 @@
-import {registerUser} from "../services/session.services.js";
+import { registerUser, loginUser } from "../services/session.services.js";
 
 
 export const register = async(req,res)=>{
 
     try{
-        console.log(req.body);
         const {first_name,last_name,email,password}=req.body;
 
 
@@ -47,6 +46,39 @@ export const register = async(req,res)=>{
 
         res.status(400).json({
             error:error.message
+        });
+
+    }
+
+};
+
+export const login = async (req, res) => {
+
+    try {
+
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: "Email y contraseña son obligatorios"
+            });
+        }
+
+        const user = await loginUser(email, password);
+
+        res.status(200).json({
+            message: "Login exitoso",
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role
+            }
+        });
+
+    } catch (error) {
+
+        res.status(401).json({
+            error: error.message
         });
 
     }
