@@ -4,7 +4,11 @@ Proyecto desarrollado para la materia **Backend II** utilizando **Node.js, Expre
 
 ## Descripción
 
-Esta aplicación permite gestionar una plataforma de eventos e inscripciones. En esta etapa del proyecto se implementó un sistema de usuarios con registro seguro, autenticación mediante JWT, cookies HTTP Only y rutas protegidas utilizando middleware de autenticación.
+Esta aplicación permite gestionar una plataforma de eventos e inscripciones.
+
+En esta etapa del proyecto se implementó un sistema de autenticación utilizando **Passport.js**, integrando estrategias de registro, login y validación de usuario actual mediante JWT almacenado en cookies HTTP Only.
+
+La autenticación fue organizada mediante estrategias centralizadas, dejando preparada la estructura para incorporar futuros proveedores externos como Google o GitHub sin modificar la lógica principal de la aplicación.
 
 ## Tecnologías utilizadas
 
@@ -14,6 +18,9 @@ Esta aplicación permite gestionar una plataforma de eventos e inscripciones. En
 * Mongoose
 * bcrypt
 * jsonwebtoken
+* Passport.js
+* passport-local
+* passport-jwt
 * cookie-parser
 * dotenv
 
@@ -32,8 +39,8 @@ npm install
 Ejemplo:
 
 ```env
-MONGO_URI=tu_cadena_de_conexion
 PORT=8080
+MONGO_URI=tu_cadena_de_conexion
 JWT_SECRET=tu_clave_secreta
 JWT_EXPIRES_IN=1h
 NODE_ENV=development
@@ -45,11 +52,13 @@ NODE_ENV=development
 npm start
 ```
 
-## Funcionalidades implementadas
+---
 
-### Registro seguro de usuarios
+# Funcionalidades implementadas
 
-Permite crear nuevos usuarios validando la información recibida y almacenando la contraseña de forma segura utilizando bcrypt.
+## Registro seguro de usuarios
+
+Permite crear nuevos usuarios mediante una estrategia de Passport llamada `register`.
 
 Validaciones implementadas:
 
@@ -58,8 +67,47 @@ Validaciones implementadas:
 * La contraseña debe tener una longitud mínima de 6 caracteres.
 * El email se normaliza antes de guardarse utilizando trim y lowercase.
 * No se permiten usuarios registrados con el mismo email.
-* La contraseña nunca se guarda en texto plano.
-* La respuesta del endpoint nunca devuelve la contraseña.
+* La contraseña se almacena utilizando bcrypt.
+* La respuesta nunca devuelve la contraseña del usuario.
+
+---
+
+## Autenticación con Passport.js
+
+La autenticación fue refactorizada utilizando estrategias centralizadas dentro de:
+
+```
+src/config/passport.config.js
+```
+
+Estrategias implementadas:
+
+### register
+
+Se encarga de:
+
+* Validar y crear usuarios.
+* Aplicar hash a la contraseña.
+* Controlar usuarios duplicados.
+* Devolver el usuario autenticado a través de `req.user`.
+
+### login
+
+Se encarga de:
+
+* Buscar usuarios por email.
+* Comparar contraseñas mediante bcrypt.
+* Rechazar credenciales inválidas con un mensaje genérico.
+
+Luego de una autenticación exitosa, el controller genera el JWT y crea la cookie de autenticación.
+
+### current
+
+Se encarga de:
+
+* Leer el JWT desde la cookie `currentUser`.
+* Validar la firma del token.
+* Dejar el payload disponible en `req.user`.
 
 ---
 
@@ -130,7 +178,14 @@ Validaciones implementadas:
 }
 ```
 
-Al iniciar sesión correctamente se genera un JWT y se almacena en una cookie llamada `currentUser` utilizando configuración HTTP Only.
+Al iniciar sesión correctamente se genera un JWT firmado con `JWT_SECRET` y se almacena en una cookie llamada `currentUser`.
+
+Configuración de cookie:
+
+* httpOnly: true
+* sameSite: lax
+* maxAge: 3600000
+* secure únicamente en producción
 
 En caso de error:
 
@@ -150,7 +205,7 @@ En caso de error:
 /api/sessions/current
 ```
 
-Esta ruta requiere una cookie válida de autenticación.
+Esta ruta utiliza la estrategia `current` de Passport y requiere una cookie JWT válida.
 
 ### Respuesta exitosa
 
@@ -162,7 +217,7 @@ Esta ruta requiere una cookie válida de autenticación.
 }
 ```
 
-La contraseña del usuario nunca es enviada en la respuesta.
+Nunca se devuelve la contraseña del usuario.
 
 ---
 
@@ -174,7 +229,7 @@ La contraseña del usuario nunca es enviada en la respuesta.
 /api/sessions/logout
 ```
 
-Elimina la cookie de autenticación del usuario.
+Elimina la cookie `currentUser`.
 
 ### Respuesta
 
@@ -183,6 +238,8 @@ Elimina la cookie de autenticación del usuario.
   "message": "Logout exitoso"
 }
 ```
+
+Esta ruta no requiere Passport.
 
 ---
 
@@ -199,10 +256,13 @@ Estructura principal:
 * Models
 * Middlewares
 * Utils
+* Config
 
-La lógica de negocio se encuentra separada de las rutas, utilizando servicios y repositorios para la comunicación con la base de datos.
+La lógica de autenticación se encuentra centralizada en Passport dentro de `config/passport.config.js`.
 
-La lógica de hash de contraseñas y generación/verificación de JWT se encuentra separada en helpers reutilizables dentro de `utils`.
+La lógica de negocio permanece separada en servicios y repositorios.
+
+La generación y validación de JWT, junto con el hash de contraseñas, se encuentran separados en helpers reutilizables dentro de `utils`.
 
 ---
 
@@ -211,19 +271,20 @@ La lógica de hash de contraseñas y generación/verificación de JWT se encuent
 * Hash de contraseñas utilizando bcrypt.
 * Autenticación mediante JWT.
 * Token almacenado en cookie HTTP Only.
-* Middleware para validar usuarios autenticados.
+* Estrategias de Passport para registro, login y usuario autenticado.
 * Variables sensibles almacenadas mediante variables de entorno.
 * No se expone información sensible del usuario en las respuestas.
+* Credenciales inválidas devuelven mensajes genéricos.
 
 ---
 
 # Variables de entorno
 
-El proyecto utiliza un archivo `.env` para almacenar configuraciones privadas como conexión a MongoDB y claves utilizadas para JWT.
+El proyecto utiliza un archivo `.env` para almacenar configuraciones privadas.
 
 El archivo `.env` no debe subirse al repositorio.
 
-El archivo `.env.example` contiene las variables necesarias para configurar el proyecto:
+El archivo `.env.example` contiene las variables necesarias:
 
 ```env
 PORT=8080
@@ -238,3 +299,4 @@ NODE_ENV=development
 ## Autor
 
 Aylen Gomez
+
