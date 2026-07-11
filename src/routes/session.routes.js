@@ -14,7 +14,14 @@ router.post(
     register
 );
 
-router.post("/login", login);
+router.post(
+    "/login",
+    passport.authenticate("login", {
+        session: false,
+        failWithError: true
+    }),
+    login
+);
 
 router.get("/current", auth, current);
 

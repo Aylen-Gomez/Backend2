@@ -42,8 +42,9 @@ export const loginUser = async (email, password) => {
         throw new Error("Credenciales inválidas");
     }
 
-    const isValidPassword = await validatePassword(password, user.password);
 
+    const isValidPassword = await validatePassword(password, user.password);
+    
     if (!isValidPassword) {
         throw new Error("Credenciales inválidas");
     }

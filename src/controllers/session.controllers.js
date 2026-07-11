@@ -1,4 +1,3 @@
-import { loginUser } from "../services/session.services.js";
 import { generateToken } from "../utils/jwt.js";
 
 export const register = async (req, res) => {
@@ -12,19 +11,12 @@ export const register = async (req, res) => {
 
 };
 
+
 export const login = async (req, res) => {
 
     try {
 
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                error: "Email y contraseña son obligatorios"
-            });
-        }
-
-        const user = await loginUser(email, password);
+        const user = req.user;
 
         const token = generateToken({
             id: user._id,
@@ -51,12 +43,13 @@ export const login = async (req, res) => {
     } catch (error) {
 
         res.status(401).json({
-            error: error.message
+            error: "Credenciales inválidas"
         });
 
     }
 
 };
+
 
 export const current = async (req, res) => {
 
@@ -67,6 +60,7 @@ export const current = async (req, res) => {
     });
 
 };
+
 
 export const logout = async (req, res) => {
 
