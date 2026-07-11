@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-
+import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { registerUser, loginUser } from "../services/session.services.js";
 
 export const initializePassport = () => {
@@ -10,7 +10,8 @@ export const initializePassport = () => {
         new LocalStrategy(
             {
                 usernameField: "email",
-                passReqToCallback: true
+                passReqToCallback: true,
+                session: false
             },
             async (req, email, password, done) => {
 
@@ -37,7 +38,8 @@ export const initializePassport = () => {
         "login",
         new LocalStrategy(
             {
-                usernameField: "email"
+                usernameField: "email",
+                session: false
             },
             async (email, password, done) => {
 
@@ -59,5 +61,32 @@ export const initializePassport = () => {
             }
         )
     );
+
+    passport.use(
+    "current",
+    new JwtStrategy(
+        {
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                (req) => {
+                    return req.cookies.currentUser;
+                }
+            ]),
+            secretOrKey: process.env.JWT_SECRET
+        },
+        async (payload, done) => {
+
+            try {
+
+                return done(null, payload);
+
+            } catch (error) {
+
+                return done(error, false);
+
+            }
+
+        }
+    )
+);
 
 };
