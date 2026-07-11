@@ -1,3 +1,4 @@
+/*
 import { verifyToken } from "../utils/jwt.js";
 
 
@@ -30,3 +31,5 @@ export const auth = (req, res, next) => {
     }
 
 };
+
+*/
