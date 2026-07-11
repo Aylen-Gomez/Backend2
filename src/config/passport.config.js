@@ -14,6 +14,19 @@ export const initializePassport = () => {
                 passReqToCallback: true
             },
             async (req, email, password, done) => {
+                    try {
+
+                    const user = await registerUser(req.body);
+                    console.log(user);
+
+                    return done(null, user);
+
+                } catch (error) {
+
+                    return done(null, false, {
+                        message: error.message
+                    });
+                }
 
             }
         )
