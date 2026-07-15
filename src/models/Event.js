@@ -10,7 +10,12 @@ const eventSchema = new mongoose.Schema({
 
     location: String,
 
-    price: Number
+    price: Number,
+
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }
 
 });
 
