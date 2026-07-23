@@ -1,12 +1,39 @@
 import {
     createEventService,
+    getAllEventsService,
     getEventById,
     updateEventService
 } from "../services/event.services.js";
 
-export const getEvents = (req, res) => {
+export const getEvents = async (req, res) => {
 
-    res.json([]);
+    try {
+
+        const { page = 1, limit = 10 } = req.query;
+
+        const result = await getAllEventsService(
+            {},
+            {
+                skip: (page - 1) * limit,
+                limit: Number(limit)
+            }
+        );
+
+        res.status(200).json({
+            data: result.events,
+            page: Number(page),
+            limit: Number(limit),
+            total: result.total,
+            totalPages: Math.ceil(result.total / limit)
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
 
 };
 
@@ -16,7 +43,7 @@ export const createEvent = async (req, res) => {
 
         const eventData = {
             ...req.body,
-            owner: req.user.id
+            organizer: req.user.id
         };
 
         const event = await createEventService(eventData);
@@ -28,7 +55,7 @@ export const createEvent = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        res.status(400).json({
             error: error.message
         });
 
@@ -52,7 +79,7 @@ export const updateEvent = async (req, res) => {
 
         if (
             req.user.role !== "admin" &&
-            event.owner.toString() !== req.user.id
+            event.organizer.toString() !== req.user.id
         ) {
 
             return res.status(403).json({
@@ -73,7 +100,7 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
+        res.status(400).json({
             error: error.message
         });
 
