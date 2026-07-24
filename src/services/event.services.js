@@ -54,3 +54,26 @@ export const updateEventService = async (id, data) => {
     return await eventRepository.update(id, data);
 
 };
+
+export const updateEventStatusService = async (id, status) => {
+
+    const event = await eventRepository.findById(id);
+
+    if (!event) {
+        throw new Error("Evento no encontrado");
+    }
+
+    if (event.status === "cancelled") {
+        throw new Error("No se puede modificar un evento cancelado");
+    }
+
+    if (
+        status === "published" &&
+        (event.status === "finished" || event.status === "cancelled")
+    ) {
+        throw new Error("No se puede publicar un evento finalizado o cancelado");
+    }
+
+    return await eventRepository.update(id, { status });
+
+};

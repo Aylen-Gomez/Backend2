@@ -2,8 +2,10 @@ import { Router } from "express";
 import passport from "passport";
 import {
     getEvents,
+    getEventByIdController,
     createEvent,
     updateEvent,
+    updateEventStatus,
     getUsers
 } from "../controllers/event.controllers.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
@@ -11,6 +13,15 @@ import { authorize } from "../middlewares/authorize.middleware.js";
 const router = Router();
 
 router.get("/", getEvents);
+
+router.get(
+    "/users",
+    passport.authenticate("current", { session: false }),
+    authorize("admin"),
+    getUsers
+);
+
+router.get("/:id", getEventByIdController);
 
 router.post(
     "/",
@@ -26,11 +37,11 @@ router.put(
     updateEvent
 );
 
-router.get(
-    "/users",
+router.patch(
+    "/:id/status",
     passport.authenticate("current", { session: false }),
-    authorize("admin"),
-    getUsers
+    authorize("organizer", "admin"),
+    updateEventStatus
 );
 
 export default router;

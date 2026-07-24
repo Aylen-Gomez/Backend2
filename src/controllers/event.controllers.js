@@ -2,7 +2,8 @@ import {
     createEventService,
     getAllEventsService,
     getEventById,
-    updateEventService
+    updateEventService,
+    updateEventStatusService
 } from "../services/event.services.js";
 
 export const getEvents = async (req, res) => {
@@ -26,6 +27,32 @@ export const getEvents = async (req, res) => {
             total: result.total,
             totalPages: Math.ceil(result.total / limit)
         });
+
+    } catch (error) {
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
+
+};
+
+export const getEventByIdController = async (req, res) => {
+
+    try {
+
+        const event = await getEventById(req.params.id);
+
+        if (!event) {
+
+            return res.status(404).json({
+                error: "Evento no encontrado"
+            });
+
+        }
+
+        res.status(200).json(event);
 
     } catch (error) {
 
@@ -95,6 +122,51 @@ export const updateEvent = async (req, res) => {
 
         res.status(200).json({
             message: "Evento actualizado correctamente",
+            event: updatedEvent
+        });
+
+    } catch (error) {
+
+        res.status(400).json({
+            error: error.message
+        });
+
+    }
+
+};
+
+export const updateEventStatus = async (req, res) => {
+
+    try {
+
+        const event = await getEventById(req.params.id);
+
+        if (!event) {
+
+            return res.status(404).json({
+                error: "Evento no encontrado"
+            });
+
+        }
+
+        if (
+            req.user.role !== "admin" &&
+            event.organizer.toString() !== req.user.id
+        ) {
+
+            return res.status(403).json({
+                error: "No tenés permisos para modificar este evento"
+            });
+
+        }
+
+        const updatedEvent = await updateEventStatusService(
+            req.params.id,
+            req.body.status
+        );
+
+        res.status(200).json({
+            message: "Estado del evento actualizado correctamente",
             event: updatedEvent
         });
 
