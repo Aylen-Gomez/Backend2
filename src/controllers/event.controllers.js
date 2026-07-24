@@ -10,14 +10,61 @@ export const getEvents = async (req, res) => {
 
     try {
 
-        const { page = 1, limit = 10 } = req.query;
+        const {
+            page = 1,
+            limit = 10,
+            status,
+            category,
+            location,
+            dateFrom,
+            dateTo,
+            sort
+        } = req.query;
+
+        const filter = {};
+
+        if (status) {
+            filter.status = status;
+        }
+
+        if (category) {
+            filter.category = category;
+        }
+
+        if (location) {
+            filter.location = location;
+        }
+
+        if (dateFrom || dateTo) {
+
+            filter.date = {};
+
+            if (dateFrom) {
+                filter.date.$gte = new Date(dateFrom);
+            }
+
+            if (dateTo) {
+                filter.date.$lte = new Date(dateTo);
+            }
+
+        }
+
+        const options = {
+            skip: (page - 1) * limit,
+            limit: Number(limit)
+        };
+
+        if (sort) {
+
+            options.sort = {
+                [sort]: 1
+            };
+
+        }
 
         const result = await getAllEventsService(
-            {},
-            {
-                skip: (page - 1) * limit,
-                limit: Number(limit)
-            }
+            filter,
+            options
         );
 
         res.status(200).json({
