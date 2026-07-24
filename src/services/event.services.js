@@ -2,6 +2,13 @@ import EventRepository from "../repositories/event.repositories.js";
 
 const eventRepository = new EventRepository();
 
+const validStatus = [
+    "draft",
+    "published",
+    "cancelled",
+    "finished"
+];
+
 export const createEventService = async (data) => {
 
     if (new Date(data.date) < new Date()) {
@@ -14,6 +21,10 @@ export const createEventService = async (data) => {
 
     if (data.price < 0) {
         throw new Error("El precio no puede ser negativo");
+    }
+
+    if (!validStatus.includes(data.status)) {
+    throw new Error("Estado inválido");
     }
 
     return await eventRepository.create(data);
@@ -65,6 +76,10 @@ export const updateEventStatusService = async (id, status) => {
 
     if (event.status === "cancelled") {
         throw new Error("No se puede modificar un evento cancelado");
+    }
+
+    if (!validStatus.includes(status)) {
+    throw new Error("Estado inválido");
     }
 
     if (
