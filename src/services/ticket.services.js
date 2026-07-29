@@ -12,6 +12,27 @@ export const createTicketService = async (userId, eventId, quantity) => {
         throw new Error("Evento no encontrado");
     }
 
+    const activeTicket = await ticketRepository.findActiveTicket(
+    userId,
+    eventId
+);
+
+    if (activeTicket) {
+        throw new Error("Ya estás inscripto en este evento");
+    }
+
+    if (event.status !== "published") {
+    throw new Error("Solo es posible inscribirse a eventos publicados");
+    }
+
+    if (event.status === "cancelled") {
+        throw new Error("No es posible inscribirse a un evento cancelado");
+    }
+
+    if (event.status === "finished") {
+        throw new Error("No es posible inscribirse a un evento finalizado");
+    }
+
     const reservationCode = crypto.randomUUID();
 
     return await ticketRepository.create({
