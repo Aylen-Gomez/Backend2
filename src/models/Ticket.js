@@ -2,12 +2,46 @@ import mongoose from "mongoose";
 
 const ticketSchema = new mongoose.Schema({
 
-    user: String,
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
 
-    event: String,
+    event: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Event",
+        required: true
+    },
 
-    quantity: Number
+    status: {
+        type: String,
+        enum: ["confirmed", "pending", "cancelled"],
+        default: "confirmed"
+    },
 
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+
+    reservationCode: {
+        type: String,
+        required: true,
+        unique: true
+    },
+
+    cancelledAt: {
+        type: Date,
+        default: null
+    }
+
+}, {
+    timestamps: {
+        createdAt: true,
+        updatedAt: false
+    }
 });
 
 export default mongoose.model("Ticket", ticketSchema);

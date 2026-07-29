@@ -1,9 +1,23 @@
 import { Router } from "express";
+import passport from "passport";
 
-import { getTickets } from "../controllers/ticket.controllers.js";
+import {
+    getMyTickets,
+    cancelTicket
+} from "../controllers/ticket.controllers.js";
 
 const router = Router();
 
-router.get("/", getTickets);
+router.get(
+    "/my-tickets",
+    passport.authenticate("current", { session: false }),
+    getMyTickets
+);
+
+router.patch(
+    "/:tid/cancel",
+    passport.authenticate("current", { session: false }),
+    cancelTicket
+);
 
 export default router;

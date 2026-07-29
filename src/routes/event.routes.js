@@ -9,6 +9,7 @@ import {
     getUsers
 } from "../controllers/event.controllers.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
+import { createTicket } from "../controllers/ticket.controllers.js";
 
 const router = Router();
 
@@ -42,6 +43,12 @@ router.patch(
     passport.authenticate("current", { session: false }),
     authorize("organizer", "admin"),
     updateEventStatus
+);
+
+router.post(
+    "/:eid/tickets",
+    passport.authenticate("current", { session: false }),
+    createTicket
 );
 
 export default router;
