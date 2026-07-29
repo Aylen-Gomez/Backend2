@@ -6,6 +6,10 @@ const ticketRepository = new TicketRepository();
 
 export const createTicketService = async (userId, eventId, quantity) => {
 
+    if (quantity <= 0) {
+        throw new Error("La cantidad debe ser mayor a 0");
+    }
+
     const event = await getEventById(eventId);
 
     if (!event) {
