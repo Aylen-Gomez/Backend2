@@ -25,6 +25,12 @@ export const createTicketService = async (userId, eventId, quantity) => {
         throw new Error("Ya estás inscripto en este evento");
     }
 
+    const reserved = await ticketRepository.countReserved(eventId);
+
+    if (reserved + quantity > event.capacity) {
+        throw new Error("No hay cupos disponibles");
+    }
+
     if (event.status !== "published") {
     throw new Error("Solo es posible inscribirse a eventos publicados");
     }
