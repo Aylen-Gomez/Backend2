@@ -6,11 +6,11 @@ Proyecto desarrollado para la materia **Backend II** utilizando **Node.js, Expre
 
 Esta aplicación permite gestionar una plataforma de eventos e inscripciones.
 
-En esta etapa del proyecto se implementó un sistema completo de **autenticación y autorización** utilizando **Passport.js**, **JWT** y **cookies HTTP Only**.
+En esta etapa del proyecto se implementó un sistema completo de autenticación y autorización utilizando **Passport.js**, **JWT** y **cookies HTTP Only**, junto con la entidad principal del sistema: **Eventos**.
 
-La autenticación fue centralizada mediante estrategias de Passport para registro, login y validación del usuario actual. Además, se incorporó un sistema de autorización basado en roles (`user`, `organizer` y `admin`) para proteger rutas y controlar el acceso a distintas funcionalidades de la plataforma.
+La aplicación permite registrar usuarios, iniciar sesión, gestionar eventos según el rol del usuario y aplicar reglas de negocio para controlar la creación, modificación y publicación de eventos.
 
-La estructura del proyecto quedó preparada para incorporar futuros proveedores de autenticación externos, como **Google** o **GitHub**, sin modificar la configuración principal de la aplicación.
+Además, se incorporó un sistema de autorización basado en roles (`user`, `organizer` y `admin`), filtros avanzados, paginación y ordenamiento para el listado de eventos.
 
 ---
 
@@ -68,7 +68,7 @@ El sistema cuenta con tres tipos de usuarios:
 * `organizer`
 * `admin`
 
-Durante el registro público, todos los usuarios se crean automáticamente con el rol **user**.
+Durante el registro público todos los usuarios se crean automáticamente con el rol **user**.
 
 Los roles **organizer** y **admin** únicamente pueden asignarse desde la base de datos o mediante procesos administrativos.
 
@@ -76,13 +76,14 @@ Los roles **organizer** y **admin** únicamente pueden asignarse desde la base d
 
 # Matriz de permisos
 
-| Acción                        | user | organizer | admin |
-| ----------------------------- | ---- | --------- | ----- |
-| Consultar eventos             | ✅   | ✅         | ✅     |
-| Crear eventos                 | ❌   | ✅         | ✅     |
-| Modificar eventos propios     | ❌   | ✅         | ✅     |
-| Modificar cualquier evento    | ❌   | ❌         | ✅     |
-| Acceder a ruta administrativa | ❌   | ❌         | ✅     |
+| Acción | user | organizer | admin |
+| ------- | ---- | --------- | ----- |
+| Consultar eventos | ✅ | ✅ | ✅ |
+| Crear eventos | ❌ | ✅ | ✅ |
+| Modificar eventos propios | ❌ | ✅ | ✅ |
+| Modificar cualquier evento | ❌ | ❌ | ✅ |
+| Cambiar estado de eventos propios | ❌ | ✅ | ✅ |
+| Acceder a ruta administrativa | ❌ | ❌ | ✅ |
 
 ---
 
@@ -99,7 +100,7 @@ Validaciones implementadas:
 * La contraseña debe tener una longitud mínima de 6 caracteres.
 * El email se normaliza utilizando `trim()` y `toLowerCase()`.
 * No se permiten usuarios duplicados.
-* La contraseña se almacena utilizando **bcrypt**.
+* La contraseña se almacena utilizando bcrypt.
 * El registro público no permite crear usuarios con rol `organizer` o `admin`.
 * La respuesta nunca devuelve la contraseña del usuario.
 
@@ -115,34 +116,65 @@ src/config/passport.config.js
 
 ### Estrategia register
 
-Se encarga de:
-
-* Crear usuarios.
-* Aplicar hash a la contraseña.
-* Controlar usuarios duplicados.
-* Devolver el usuario autenticado mediante `req.user`.
+* Crea usuarios.
+* Aplica hash a la contraseña.
+* Controla usuarios duplicados.
 
 ### Estrategia login
 
-Se encarga de:
-
-* Buscar usuarios por email.
-* Validar credenciales.
-* Rechazar credenciales inválidas con un mensaje genérico.
-
-Luego de una autenticación exitosa, el controller:
-
-* Genera el JWT.
+* Busca usuarios por email.
+* Valida credenciales.
+* Genera un JWT.
 * Crea la cookie `currentUser`.
-* Devuelve la información pública del usuario.
 
 ### Estrategia current
 
-Se encarga de:
+* Lee el JWT desde la cookie.
+* Valida la firma.
+* Deja el usuario autenticado disponible en `req.user`.
 
-* Leer el JWT desde la cookie `currentUser`.
-* Validar la firma del token.
-* Dejar el payload disponible en `req.user`.
+---
+
+# Gestión de eventos
+
+Se implementó la entidad **Event** con los siguientes campos:
+
+* title
+* description
+* category
+* date
+* location
+* capacity
+* price
+* status
+* organizer
+
+El campo **organizer** almacena una referencia (`ObjectId`) al usuario creador del evento.
+
+Los estados permitidos son:
+
+* draft
+* published
+* cancelled
+* finished
+
+---
+
+# Validaciones de negocio
+
+Las validaciones fueron implementadas en la capa **Services**.
+
+Reglas implementadas:
+
+* No se pueden crear eventos con fecha pasada.
+* La capacidad debe ser mayor a 0.
+* El precio no puede ser negativo.
+* Solo se permiten estados válidos.
+* No se pueden modificar eventos cancelados.
+* No se pueden publicar eventos finalizados o cancelados.
+* El organizador se asigna automáticamente desde el usuario autenticado.
+* Un organizer solo puede modificar sus propios eventos.
+* Un admin puede modificar cualquier evento.
 
 ---
 
@@ -156,34 +188,9 @@ Se encarga de:
 /api/sessions/register
 ```
 
-### Body esperado
-
-```json
-{
-  "first_name": "Aylen",
-  "last_name": "Gomez",
-  "email": "aylen@gmail.com",
-  "password": "123456"
-}
-```
-
-### Respuesta exitosa
-
-```json
-{
-  "message": "Usuario registrado correctamente",
-  "user": {
-    "first_name": "Aylen",
-    "last_name": "Gomez",
-    "email": "aylen@gmail.com",
-    "role": "user"
-  }
-}
-```
-
 ---
 
-## Login de usuario
+## Login
 
 **POST**
 
@@ -191,44 +198,7 @@ Se encarga de:
 /api/sessions/login
 ```
 
-### Body esperado
-
-```json
-{
-  "email": "aylen@gmail.com",
-  "password": "123456"
-}
-```
-
-### Respuesta exitosa
-
-```json
-{
-  "message": "Login exitoso",
-  "user": {
-    "id": "usuario_id",
-    "email": "aylen@gmail.com",
-    "role": "user"
-  }
-}
-```
-
-Al iniciar sesión correctamente se genera un JWT firmado con `JWT_SECRET` y se almacena en una cookie llamada `currentUser`.
-
-Configuración de la cookie:
-
-* `httpOnly: true`
-* `sameSite: "lax"`
-* `maxAge: 3600000`
-* `secure` únicamente en producción
-
-### Error
-
-```json
-{
-  "error": "Credenciales inválidas"
-}
-```
+Genera un JWT y crea una cookie HTTP Only.
 
 ---
 
@@ -240,19 +210,7 @@ Configuración de la cookie:
 /api/sessions/current
 ```
 
-Requiere una cookie JWT válida.
-
-### Respuesta exitosa
-
-```json
-{
-  "id": "usuario_id",
-  "email": "aylen@gmail.com",
-  "role": "user"
-}
-```
-
-La contraseña nunca es enviada en la respuesta.
+Requiere autenticación.
 
 ---
 
@@ -264,17 +222,75 @@ La contraseña nunca es enviada en la respuesta.
 /api/sessions/logout
 ```
 
-Elimina la cookie `currentUser`.
+Elimina la cookie de autenticación.
 
-### Respuesta
+---
 
-```json
-{
-  "message": "Logout exitoso"
-}
+## Listar eventos
+
+**GET**
+
+```text
+/api/events
 ```
 
-Esta ruta no requiere Passport.
+Ruta pública.
+
+Permite utilizar:
+
+### Filtros
+
+```text
+?status=published
+```
+
+```text
+?category=workshop
+```
+
+```text
+?location=Mar del Plata
+```
+
+```text
+?dateFrom=2026-09-01&dateTo=2026-09-30
+```
+
+Los filtros pueden combinarse entre sí.
+
+### Paginación
+
+```text
+?page=1&limit=10
+```
+
+### Ordenamiento
+
+```text
+?sort=date
+```
+
+La respuesta devuelve:
+
+* data
+* page
+* limit
+* total
+* totalPages
+
+---
+
+## Obtener un evento
+
+**GET**
+
+```text
+/api/events/:id
+```
+
+Ruta pública.
+
+Devuelve la información completa de un evento.
 
 ---
 
@@ -286,18 +302,12 @@ Esta ruta no requiere Passport.
 /api/events
 ```
 
-Acceso permitido únicamente para:
+Acceso:
 
-* `organizer`
-* `admin`
+* organizer
+* admin
 
-### Respuesta exitosa
-
-```json
-{
-  "message": "Evento creado correctamente"
-}
-```
+El organizador se asigna automáticamente utilizando el usuario autenticado.
 
 ---
 
@@ -309,16 +319,22 @@ Acceso permitido únicamente para:
 /api/events/:id
 ```
 
-* Un `organizer` solo puede modificar eventos propios.
-* Un `admin` puede modificar cualquier evento.
+Permisos:
 
-### Respuesta exitosa
+* organizer únicamente sobre eventos propios.
+* admin sobre cualquier evento.
 
-```json
-{
-  "message": "Evento actualizado correctamente"
-}
+---
+
+## Cambiar estado del evento
+
+**PATCH**
+
+```text
+/api/events/:id/status
 ```
+
+Permite modificar el estado de un evento respetando las reglas de negocio.
 
 ---
 
@@ -330,7 +346,7 @@ Acceso permitido únicamente para:
 /api/events/users
 ```
 
-Acceso exclusivo para usuarios con rol `admin`.
+Acceso exclusivo para usuarios con rol **admin**.
 
 ---
 
@@ -338,28 +354,30 @@ Acceso exclusivo para usuarios con rol `admin`.
 
 ## 401 Unauthorized
 
-Se devuelve cuando el usuario no posee una sesión válida o no envía la cookie JWT.
+Se devuelve cuando el usuario no posee una sesión válida.
 
 Ejemplos:
 
-* Acceder a `/api/sessions/current` sin iniciar sesión.
-* Acceder a rutas protegidas sin cookie válida.
+* Acceder a rutas protegidas sin iniciar sesión.
+* Cookie JWT inexistente o inválida.
+
+---
 
 ## 403 Forbidden
 
-Se devuelve cuando el usuario está autenticado correctamente pero su rol no posee permisos para realizar la acción solicitada.
+Se devuelve cuando el usuario está autenticado pero no posee permisos suficientes.
 
 Ejemplos:
 
-* Un usuario con rol `user` intentando crear un evento.
-* Un `organizer` intentando modificar un evento de otro `organizer`.
-* Un `organizer` intentando acceder a una ruta exclusiva de `admin`.
+* Un user intentando crear eventos.
+* Un organizer intentando modificar un evento ajeno.
+* Un organizer intentando acceder a una ruta exclusiva para admin.
 
 ---
 
 # Arquitectura
 
-El proyecto está organizado utilizando arquitectura en capas.
+El proyecto utiliza arquitectura en capas.
 
 Estructura principal:
 
@@ -372,11 +390,11 @@ Estructura principal:
 * Utils
 * Config
 
-La lógica de autenticación se encuentra centralizada en Passport dentro de `src/config/passport.config.js`.
+La lógica de negocio se implementa en **Services**.
 
-La lógica de negocio permanece separada en servicios y repositorios.
+El acceso a datos se realiza mediante **Repositories**.
 
-La generación y validación de JWT, junto con el hash de contraseñas, se encuentran implementados en helpers reutilizables dentro de `utils`.
+Los **Controllers** únicamente gestionan las peticiones y respuestas HTTP.
 
 ---
 
@@ -385,23 +403,23 @@ La generación y validación de JWT, junto con el hash de contraseñas, se encue
 * Hash de contraseñas utilizando bcrypt.
 * Autenticación mediante JWT.
 * Cookies HTTP Only.
-* Estrategias Passport Local para registro y login.
-* Estrategia Passport JWT para validar sesiones.
-* Sistema de autorización basado en roles.
-* Validación de propiedad de recursos para eventos.
-* Variables sensibles almacenadas mediante variables de entorno.
-* No se exponen contraseñas ni información sensible en las respuestas.
-* Las credenciales inválidas devuelven mensajes genéricos.
+* Passport Local.
+* Passport JWT.
+* Autorización basada en roles.
+* Validación de propiedad de recursos.
+* Validaciones de negocio en la capa Services.
+* Variables sensibles mediante `.env`.
+* No se exponen contraseñas ni información sensible.
 
 ---
 
 # Variables de entorno
 
-El proyecto utiliza un archivo `.env` para almacenar configuraciones privadas.
+El proyecto utiliza un archivo `.env`.
 
-El archivo `.env` **no debe subirse al repositorio**.
+El archivo **no debe subirse al repositorio**.
 
-El archivo `.env.example` contiene las variables necesarias:
+Archivo `.env.example`:
 
 ```env
 PORT=8080
