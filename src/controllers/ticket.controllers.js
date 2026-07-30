@@ -53,7 +53,10 @@ export const cancelTicket = async (req, res) => {
 
     try {
 
-        const ticket = await cancelTicketService(req.params.tid);
+        const ticket = await cancelTicketService(
+            req.params.tid,
+            req.user
+        );
 
         res.status(200).json({
             message: "Ticket cancelado correctamente",

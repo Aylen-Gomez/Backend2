@@ -61,7 +61,24 @@ export const getMyTicketsService = async (userId) => {
 
 };
 
-export const cancelTicketService = async (ticketId) => {
+export const cancelTicketService = async (ticketId, user) => {
+
+    const ticket = await ticketRepository.findById(ticketId);
+
+    if (!ticket) {
+        throw new Error("Ticket no encontrado");
+    }
+
+    if (ticket.status === "cancelled") {
+        throw new Error("El ticket ya está cancelado");
+    }
+
+    if (
+        user.role !== "admin" &&
+        ticket.user.toString() !== user.id
+    ) {
+        throw new Error("No tenés permisos para cancelar este ticket");
+    }
 
     return await ticketRepository.update(ticketId, {
         status: "cancelled",
