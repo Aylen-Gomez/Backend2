@@ -21,10 +21,5 @@ router.patch(
     cancelTicket
 );
 
-router.get(
-    "/event/:eid",
-    passport.authenticate("current", { session: false }),
-    getTicketsByEvent
-);
 
 export default router;

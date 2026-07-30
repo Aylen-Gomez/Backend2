@@ -10,6 +10,7 @@ import {
 } from "../controllers/event.controllers.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
 import { createTicket } from "../controllers/ticket.controllers.js";
+import { getTicketsByEvent } from "../controllers/ticket.controllers.js";
 
 const router = Router();
 
@@ -49,6 +50,12 @@ router.post(
     "/:eid/tickets",
     passport.authenticate("current", { session: false }),
     createTicket
+);
+
+router.get(
+    "/:eid/tickets",
+    passport.authenticate("current", { session: false }),
+    getTicketsByEvent
 );
 
 export default router;
