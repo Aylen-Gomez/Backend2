@@ -58,6 +58,17 @@ export default class TicketRepository {
 
     }
 
+    async findByEvent(eventId) {
+
+    return await Ticket.find({
+        event: eventId
+    }).populate(
+        "user",
+        "first_name last_name email"
+    );
+
+    }
+
     async update(id, data) {
 
         return await Ticket.findByIdAndUpdate(

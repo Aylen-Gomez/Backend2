@@ -1,7 +1,8 @@
 import {
     createTicketService,
     getMyTicketsService,
-    cancelTicketService
+    cancelTicketService,
+    getTicketsByEventService
 } from "../services/ticket.services.js";
 
 export const createTicket = async (req, res) => {
@@ -66,6 +67,43 @@ export const cancelTicket = async (req, res) => {
     } catch (error) {
 
         res.status(400).json({
+            error: error.message
+        });
+
+    }
+
+};
+
+export const getTicketsByEvent = async (req, res) => {
+
+    try {
+
+        const tickets = await getTicketsByEventService(
+            req.params.eid,
+            req.user
+        );
+
+        res.status(200).json(tickets);
+
+    } catch (error) {
+
+        if (
+            error.message === "Evento no encontrado"
+        ) {
+            return res.status(404).json({
+                error: error.message
+            });
+        }
+
+        if (
+            error.message === "No tenés permisos para ver los tickets de este evento"
+        ) {
+            return res.status(403).json({
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
             error: error.message
         });
 

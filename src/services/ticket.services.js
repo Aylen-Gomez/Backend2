@@ -86,3 +86,22 @@ export const cancelTicketService = async (ticketId, user) => {
     });
 
 };
+
+export const getTicketsByEventService = async (eventId, user) => {
+
+    const event = await getEventById(eventId);
+
+    if (!event) {
+        throw new Error("Evento no encontrado");
+    }
+
+    if (
+        user.role !== "admin" &&
+        event.organizer.toString() !== user.id
+    ) {
+        throw new Error("No tenés permisos para ver los tickets de este evento");
+    }
+
+    return await ticketRepository.findByEvent(eventId);
+
+};
