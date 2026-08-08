@@ -1,8 +1,11 @@
 import TicketRepository from "../repositories/ticket.repositories.js";
 import { getEventById } from "./event.services.js";
 import crypto from "crypto";
+import UserRepository from "../repositories/user.repositories.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 const ticketRepository = new TicketRepository();
+const userRepository = new UserRepository();
 
 export const createTicketService = async (userId, eventId, quantity) => {
 
@@ -31,27 +34,42 @@ export const createTicketService = async (userId, eventId, quantity) => {
         throw new Error("No hay cupos disponibles");
     }
 
-    if (event.status !== "published") {
-    throw new Error("Solo es posible inscribirse a eventos publicados");
-    }
-
     if (event.status === "cancelled") {
-        throw new Error("No es posible inscribirse a un evento cancelado");
+    throw new Error("No es posible inscribirse a un evento cancelado");
     }
 
     if (event.status === "finished") {
         throw new Error("No es posible inscribirse a un evento finalizado");
     }
 
+    if (event.status !== "published") {
+        throw new Error("Solo es posible inscribirse a eventos publicados");
+    }
+
     const reservationCode = crypto.randomUUID();
 
-    return await ticketRepository.create({
+    const ticket = await ticketRepository.create({
         user: userId,
         event: eventId,
         quantity,
         reservationCode,
         status: "confirmed"
     });
+
+    const user = await userRepository.findById(userId);
+
+    await sendEmail(
+        user.email,
+        "Inscripción confirmada",
+        `
+            <h2>¡Tu inscripción fue confirmada!</h2>
+            <p>Te inscribiste correctamente al evento <strong>${event.title}</strong>.</p>
+            <p>Cantidad de entradas: <strong>${quantity}</strong></p>
+            <p>Código de reserva: <strong>${reservationCode}</strong></p>
+        `
+    );
+
+    return ticket;
 
 };
 

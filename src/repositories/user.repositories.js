@@ -14,4 +14,8 @@ export default class UserRepository {
         return await this.userDAO.findByEmail(email);
     }
 
+    async findById(id) {
+        return await this.userDAO.findById(id);
+    }
+
 }

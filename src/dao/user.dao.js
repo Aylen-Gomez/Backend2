@@ -10,4 +10,8 @@ export default class UserDAO {
         return await User.findOne({ email });
     }
 
+    async findById(id) {
+    return await User.findById(id);
+    }
+
 }

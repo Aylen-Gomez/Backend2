@@ -23,6 +23,10 @@ export const createEventService = async (data) => {
         throw new Error("El precio no puede ser negativo");
     }
 
+    if (!data.status) {
+    data.status = "draft";
+    }
+
     if (!validStatus.includes(data.status)) {
     throw new Error("Estado inválido");
     }
