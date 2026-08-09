@@ -105,7 +105,7 @@ export const getEventByIdController = async (req, res) => {
 
         }
 
-        res.status(200).json(event);
+        res.status(200).json(new EventDTO(event));
 
     } catch (error) {
 
