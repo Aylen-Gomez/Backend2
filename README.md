@@ -6,11 +6,11 @@ Proyecto desarrollado para la materia **Backend II** utilizando **Node.js, Expre
 
 Esta aplicación permite gestionar una plataforma de eventos e inscripciones.
 
-En esta etapa del proyecto se implementó un sistema completo de autenticación y autorización utilizando **Passport.js**, **JWT** y **cookies HTTP Only**, junto con la entidad principal del sistema: **Eventos**.
+El proyecto cuenta con un sistema de autenticación y autorización utilizando **Passport.js, JWT y cookies HTTP Only**, junto con la gestión de eventos, usuarios y tickets/inscripciones.
 
-La aplicación permite registrar usuarios, iniciar sesión, gestionar eventos según el rol del usuario y aplicar reglas de negocio para controlar la creación, modificación y publicación de eventos.
+La aplicación permite registrar usuarios, iniciar sesión, gestionar eventos según el rol del usuario, publicar y cancelar eventos, realizar inscripciones, controlar los cupos disponibles, cancelar tickets y enviar emails de confirmación mediante **Nodemailer**.
 
-Además, se incorporó un sistema de autorización basado en roles (`user`, `organizer` y `admin`), filtros avanzados, paginación y ordenamiento para el listado de eventos.
+Además, se incorporó un sistema de autorización basado en roles (`user`, `organizer` y `admin`), filtros, paginación y ordenamiento para los eventos.
 
 ---
 
@@ -27,6 +27,7 @@ Además, se incorporó un sistema de autorización basado en roles (`user`, `org
 * passport-jwt
 * cookie-parser
 * dotenv
+* Nodemailer
 
 ---
 
@@ -50,6 +51,12 @@ MONGO_URI=tu_cadena_de_conexion
 JWT_SECRET=tu_clave_secreta
 JWT_EXPIRES_IN=1h
 NODE_ENV=development
+
+MAIL_HOST=tu_servidor_smtp
+MAIL_PORT=587
+MAIL_USER=tu_email
+MAIL_PASS=tu_password_o_app_password
+MAIL_FROM=tu_email
 ```
 
 4. Iniciar el servidor:
@@ -76,14 +83,20 @@ Los roles **organizer** y **admin** únicamente pueden asignarse desde la base d
 
 # Matriz de permisos
 
-| Acción | user | organizer | admin |
-| ------- | ---- | --------- | ----- |
-| Consultar eventos | ✅ | ✅ | ✅ |
-| Crear eventos | ❌ | ✅ | ✅ |
-| Modificar eventos propios | ❌ | ✅ | ✅ |
-| Modificar cualquier evento | ❌ | ❌ | ✅ |
-| Cambiar estado de eventos propios | ❌ | ✅ | ✅ |
-| Acceder a ruta administrativa | ❌ | ❌ | ✅ |
+| Acción                                | user | organizer | admin |
+| ------------------------------------- | ---- | --------- | ----- |
+| Consultar eventos                     | ✅    | ✅         | ✅     |
+| Crear eventos                         | ❌    | ✅         | ✅     |
+| Modificar eventos propios             | ❌    | ✅         | ✅     |
+| Modificar cualquier evento            | ❌    | ❌         | ✅     |
+| Cambiar estado de eventos propios     | ❌    | ✅         | ✅     |
+| Inscribirse a eventos                 | ✅    | ✅         | ✅     |
+| Consultar mis tickets                 | ✅    | ✅         | ✅     |
+| Cancelar ticket propio                | ✅    | ✅         | ✅     |
+| Cancelar cualquier ticket             | ❌    | ❌         | ✅     |
+| Consultar tickets de un evento propio | ❌    | ✅         | ✅     |
+| Consultar tickets de cualquier evento | ❌    | ❌         | ✅     |
+| Acceder a ruta administrativa         | ❌    | ❌         | ✅     |
 
 ---
 
@@ -91,7 +104,7 @@ Los roles **organizer** y **admin** únicamente pueden asignarse desde la base d
 
 ## Registro seguro de usuarios
 
-El registro se realiza mediante la estrategia **register** de Passport.
+El registro se realiza mediante Passport.
 
 Validaciones implementadas:
 
@@ -106,7 +119,7 @@ Validaciones implementadas:
 
 ---
 
-## Autenticación con Passport.js
+# Autenticación con Passport.js
 
 La autenticación fue centralizada en:
 
@@ -133,36 +146,40 @@ src/config/passport.config.js
 * Valida la firma.
 * Deja el usuario autenticado disponible en `req.user`.
 
+El JWT se almacena en una cookie **HTTP Only**, por lo que las rutas protegidas utilizan la cookie de autenticación.
+
 ---
 
 # Gestión de eventos
 
 Se implementó la entidad **Event** con los siguientes campos:
 
-* title
-* description
-* category
-* date
-* location
-* capacity
-* price
-* status
-* organizer
+* `title`
+* `description`
+* `category`
+* `date`
+* `location`
+* `capacity`
+* `price`
+* `status`
+* `organizer`
 
-El campo **organizer** almacena una referencia (`ObjectId`) al usuario creador del evento.
+El campo `organizer` almacena una referencia (`ObjectId`) al usuario creador del evento.
 
 Los estados permitidos son:
 
-* draft
-* published
-* cancelled
-* finished
+* `draft`
+* `published`
+* `cancelled`
+* `finished`
+
+Los eventos deben encontrarse en estado `published` para permitir nuevas inscripciones.
 
 ---
 
-# Validaciones de negocio
+# Validaciones de eventos
 
-Las validaciones fueron implementadas en la capa **Services**.
+Las validaciones se implementan en la capa **Services**.
 
 Reglas implementadas:
 
@@ -178,67 +195,11 @@ Reglas implementadas:
 
 ---
 
-# Endpoints disponibles
+# Listado de eventos
 
-## Registrar usuario
+El endpoint permite consultar eventos utilizando filtros, paginación y ordenamiento.
 
-**POST**
-
-```text
-/api/sessions/register
-```
-
----
-
-## Login
-
-**POST**
-
-```text
-/api/sessions/login
-```
-
-Genera un JWT y crea una cookie HTTP Only.
-
----
-
-## Usuario autenticado
-
-**GET**
-
-```text
-/api/sessions/current
-```
-
-Requiere autenticación.
-
----
-
-## Logout
-
-**POST**
-
-```text
-/api/sessions/logout
-```
-
-Elimina la cookie de autenticación.
-
----
-
-## Listar eventos
-
-**GET**
-
-```text
-/api/events
-```
-
-Ruta pública.
-
-Permite utilizar:
-
-### Filtros
+### Filtros disponibles
 
 ```text
 ?status=published
@@ -270,13 +231,325 @@ Los filtros pueden combinarse entre sí.
 ?sort=date
 ```
 
-La respuesta devuelve:
+La respuesta incluye:
 
-* data
-* page
-* limit
-* total
-* totalPages
+* `data`
+* `page`
+* `limit`
+* `total`
+* `totalPages`
+
+---
+
+# Sistema de Tickets e Inscripciones
+
+Se implementó la entidad **Ticket**, que relaciona un usuario con un evento mediante referencias de MongoDB.
+
+El ticket contiene:
+
+* `user`
+* `event`
+* `status`
+* `quantity`
+* `reservationCode`
+* `createdAt`
+* `cancelledAt`
+
+Las referencias a usuario y evento se almacenan mediante `ObjectId`, sin guardar objetos completos embebidos.
+
+---
+
+# Estados de los Tickets
+
+Los tickets pueden tener los siguientes estados:
+
+* `confirmed`
+* `pending`
+* `cancelled`
+
+Cuando una inscripción se realiza correctamente, el ticket se crea inicialmente con estado:
+
+```text
+confirmed
+```
+
+Al cancelar una inscripción, el estado cambia a:
+
+```text
+cancelled
+```
+
+El ticket no se elimina de la base de datos.
+
+Además, se registra la fecha de cancelación mediante:
+
+```text
+cancelledAt
+```
+
+---
+
+# Inscripción a un evento
+
+Para realizar una inscripción es necesario estar autenticado.
+
+Endpoint:
+
+**POST**
+
+```text
+/api/events/:eid/tickets
+```
+
+Body:
+
+```json
+{
+  "quantity": 1
+}
+```
+
+Al crear el ticket se genera automáticamente un código único de reserva utilizando:
+
+```text
+crypto.randomUUID()
+```
+
+Ejemplo:
+
+```text
+3772c8af-46d4-4998-bc80-a5cf9642d1b2
+```
+
+---
+
+# Validaciones de inscripción
+
+Las validaciones de inscripción se encuentran en la capa **Services**.
+
+Antes de crear un ticket se verifica:
+
+* Que el evento exista.
+* Que el evento esté en estado `published`.
+* Que el evento no esté cancelado.
+* Que el evento no haya finalizado.
+* Que `quantity` sea mayor a 0.
+* Que haya suficiente capacidad disponible.
+* Que el usuario no tenga una inscripción activa previa para el mismo evento.
+
+Si el usuario ya posee un ticket activo para ese evento, no se permite crear una segunda inscripción.
+
+---
+
+# Control de cupos
+
+La capacidad disponible se controla utilizando la cantidad de entradas reservadas por los tickets activos.
+
+Los tickets con estado:
+
+```text
+cancelled
+```
+
+no ocupan cupo.
+
+El sistema calcula la cantidad reservada y verifica:
+
+```text
+reserved + quantity <= event.capacity
+```
+
+Si no existen suficientes cupos disponibles, la inscripción es rechazada.
+
+---
+
+# Cancelación de tickets
+
+Las inscripciones pueden cancelarse sin eliminar el documento de la base de datos.
+
+Endpoint:
+
+**PATCH**
+
+```text
+/api/tickets/:tid/cancel
+```
+
+Al cancelar:
+
+```text
+status = cancelled
+```
+
+y se registra:
+
+```text
+cancelledAt = fecha de cancelación
+```
+
+El sistema valida:
+
+* Que el ticket exista.
+* Que no esté cancelado previamente.
+* Que el usuario sea dueño del ticket.
+* Que el usuario tenga rol `admin`, en caso de cancelar un ticket perteneciente a otra persona.
+
+Al quedar el ticket en estado `cancelled`, deja automáticamente de ocupar cupo para el evento.
+
+---
+
+# Mis Tickets
+
+Los usuarios autenticados pueden consultar sus propias inscripciones.
+
+Endpoint:
+
+**GET**
+
+```text
+/api/tickets/my-tickets
+```
+
+La consulta devuelve únicamente los tickets pertenecientes al usuario autenticado.
+
+Los datos del evento se obtienen mediante `populate`, incluyendo:
+
+* `title`
+* `date`
+* `location`
+
+No se exponen datos sensibles de otros usuarios.
+
+---
+
+# Tickets de un evento
+
+Los organizadores pueden consultar los tickets correspondientes a sus propios eventos.
+
+Los administradores pueden consultar los tickets de cualquier evento.
+
+Endpoint:
+
+**GET**
+
+```text
+/api/events/:eid/tickets
+```
+
+Permisos:
+
+* `organizer`: únicamente eventos propios.
+* `admin`: cualquier evento.
+* `user`: no tiene acceso.
+
+El sistema valida que el evento exista y que el organizador autenticado sea propietario del evento.
+
+---
+
+# Notificaciones por Email
+
+Al confirmar una inscripción se envía automáticamente un email al usuario mediante **Nodemailer**.
+
+El email contiene información relacionada con la inscripción, incluyendo:
+
+* Confirmación de la inscripción.
+* Nombre del evento.
+* Cantidad de entradas.
+* Código de reserva.
+
+Ejemplo de asunto:
+
+```text
+Inscripción confirmada
+```
+
+El envío utiliza variables de entorno y no contiene credenciales hardcodeadas en el código.
+
+---
+
+# Configuración de Nodemailer
+
+Las credenciales del servidor de correo se almacenan mediante variables de entorno.
+
+Variables utilizadas:
+
+```env
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USER=
+MAIL_PASS=
+MAIL_FROM=
+```
+
+Estas variables deben configurarse en `.env`.
+
+El archivo `.env` **no debe subirse al repositorio**.
+
+El proyecto incluye un archivo `.env.example` para indicar las variables necesarias sin exponer credenciales reales.
+
+---
+
+# Endpoints disponibles
+
+## Registrar usuario
+
+**POST**
+
+```text
+/api/sessions/register
+```
+
+---
+
+## Login
+
+**POST**
+
+```text
+/api/sessions/login
+```
+
+Genera un JWT y crea la cookie HTTP Only `currentUser`.
+
+---
+
+## Usuario autenticado
+
+**GET**
+
+```text
+/api/sessions/current
+```
+
+Requiere autenticación.
+
+---
+
+## Logout
+
+**POST**
+
+```text
+/api/sessions/logout
+```
+
+Elimina la cookie de autenticación.
+
+---
+
+# Eventos
+
+## Listar eventos
+
+**GET**
+
+```text
+/api/events
+```
+
+Ruta pública.
+
+Permite filtros, paginación y ordenamiento.
 
 ---
 
@@ -290,8 +563,6 @@ La respuesta devuelve:
 
 Ruta pública.
 
-Devuelve la información completa de un evento.
-
 ---
 
 ## Crear evento
@@ -304,10 +575,8 @@ Devuelve la información completa de un evento.
 
 Acceso:
 
-* organizer
-* admin
-
-El organizador se asigna automáticamente utilizando el usuario autenticado.
+* `organizer`
+* `admin`
 
 ---
 
@@ -321,8 +590,8 @@ El organizador se asigna automáticamente utilizando el usuario autenticado.
 
 Permisos:
 
-* organizer únicamente sobre eventos propios.
-* admin sobre cualquier evento.
+* `organizer`: únicamente eventos propios.
+* `admin`: cualquier evento.
 
 ---
 
@@ -334,11 +603,81 @@ Permisos:
 /api/events/:id/status
 ```
 
-Permite modificar el estado de un evento respetando las reglas de negocio.
+Permite modificar el estado del evento respetando las reglas de negocio.
 
 ---
 
-## Ruta administrativa
+# Tickets
+
+## Crear inscripción
+
+**POST**
+
+```text
+/api/events/:eid/tickets
+```
+
+Acceso:
+
+* Usuario autenticado.
+
+Body:
+
+```json
+{
+  "quantity": 1
+}
+```
+
+---
+
+## Consultar mis tickets
+
+**GET**
+
+```text
+/api/tickets/my-tickets
+```
+
+Acceso:
+
+* Usuario autenticado.
+
+Devuelve únicamente los tickets del usuario autenticado.
+
+---
+
+## Consultar tickets de un evento
+
+**GET**
+
+```text
+/api/events/:eid/tickets
+```
+
+Acceso:
+
+* `organizer`: únicamente eventos propios.
+* `admin`: cualquier evento.
+
+---
+
+## Cancelar ticket
+
+**PATCH**
+
+```text
+/api/tickets/:tid/cancel
+```
+
+Acceso:
+
+* Dueño del ticket.
+* `admin`.
+
+---
+
+# Ruta administrativa
 
 **GET**
 
@@ -346,11 +685,46 @@ Permite modificar el estado de un evento respetando las reglas de negocio.
 /api/events/users
 ```
 
-Acceso exclusivo para usuarios con rol **admin**.
+Acceso exclusivo para usuarios con rol:
+
+```text
+admin
+```
 
 ---
 
 # Códigos de respuesta
+
+## 200 OK
+
+La operación fue realizada correctamente.
+
+---
+
+## 201 Created
+
+Se utiliza cuando se crea correctamente un recurso, por ejemplo:
+
+* usuario
+* evento
+* ticket
+
+---
+
+## 400 Bad Request
+
+Se utiliza cuando existen errores de validación o reglas de negocio.
+
+Ejemplos:
+
+* Cantidad inválida.
+* Evento no publicado.
+* Evento cancelado.
+* Evento finalizado.
+* No hay cupos disponibles.
+* Usuario ya inscripto.
+
+---
 
 ## 401 Unauthorized
 
@@ -369,9 +743,23 @@ Se devuelve cuando el usuario está autenticado pero no posee permisos suficient
 
 Ejemplos:
 
-* Un user intentando crear eventos.
-* Un organizer intentando modificar un evento ajeno.
-* Un organizer intentando acceder a una ruta exclusiva para admin.
+* Un `user` intentando crear eventos.
+* Un `organizer` intentando modificar un evento ajeno.
+* Un usuario intentando cancelar un ticket ajeno.
+* Un `user` intentando consultar los tickets de un evento.
+* Un `organizer` intentando consultar los tickets de un evento que no le pertenece.
+* Acceder a una ruta exclusiva para `admin`.
+
+---
+
+## 404 Not Found
+
+Se devuelve cuando el recurso solicitado no existe.
+
+Ejemplos:
+
+* Evento inexistente.
+* Ticket inexistente.
 
 ---
 
@@ -381,20 +769,43 @@ El proyecto utiliza arquitectura en capas.
 
 Estructura principal:
 
-* Routes
-* Controllers
-* Services
-* Repositories
-* Models
-* Middlewares
-* Utils
-* Config
+```text
+src/
+├── config/
+├── controllers/
+├── dao/
+├── middlewares/
+├── models/
+├── repositories/
+├── routes/
+├── services/
+├── utils/
+└── app.js
+```
 
-La lógica de negocio se implementa en **Services**.
+Flujo general:
 
-El acceso a datos se realiza mediante **Repositories**.
+```text
+Routes
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Repositories
+   ↓
+DAO
+   ↓
+Models
+   ↓
+MongoDB
+```
 
-Los **Controllers** únicamente gestionan las peticiones y respuestas HTTP.
+La lógica de negocio se implementa principalmente en **Services**.
+
+El acceso a datos se realiza mediante **Repositories** y **DAO**.
+
+Los **Controllers** gestionan las peticiones y respuestas HTTP.
 
 ---
 
@@ -410,6 +821,8 @@ Los **Controllers** únicamente gestionan las peticiones y respuestas HTTP.
 * Validaciones de negocio en la capa Services.
 * Variables sensibles mediante `.env`.
 * No se exponen contraseñas ni información sensible.
+* No se almacenan credenciales de email directamente en el código.
+* Los tickets utilizan referencias a usuarios y eventos en lugar de objetos embebidos.
 
 ---
 
@@ -417,7 +830,7 @@ Los **Controllers** únicamente gestionan las peticiones y respuestas HTTP.
 
 El proyecto utiliza un archivo `.env`.
 
-El archivo **no debe subirse al repositorio**.
+El archivo `.env` **no debe subirse al repositorio**.
 
 Archivo `.env.example`:
 
@@ -427,7 +840,51 @@ MONGO_URI=tu_cadena_de_conexion
 JWT_SECRET=tu_clave_secreta
 JWT_EXPIRES_IN=1h
 NODE_ENV=development
+
+MAIL_HOST=tu_servidor_smtp
+MAIL_PORT=587
+MAIL_USER=tu_email
+MAIL_PASS=tu_password_o_app_password
+MAIL_FROM=tu_email
 ```
+
+No se deben incluir credenciales reales en este archivo.
+
+---
+
+# Casos de prueba de la Pre-entrega 7
+
+Antes de la entrega se deben verificar los siguientes escenarios:
+
+1. Inscripción exitosa y recepción del email de confirmación.
+2. Inscripción sin sesión → `401 Unauthorized`.
+3. Inscripción a evento inexistente → `404 Not Found`.
+4. Inscripción a evento cancelado o finalizado → error de negocio.
+5. Inscripción sin cupos suficientes → error de negocio.
+6. Inscripción duplicada activa → error de negocio.
+7. Cancelación propia → el ticket queda `cancelled` y el cupo vuelve a estar disponible.
+8. Usuario intentando cancelar un ticket ajeno → `403 Forbidden`.
+9. Usuario común intentando consultar tickets de un evento → `403 Forbidden`.
+10. Organizer intentando consultar tickets de un evento ajeno → `403 Forbidden`.
+
+---
+
+# Entrega
+
+El repositorio debe incluir:
+
+* `package.json`
+* `.gitignore`
+* `.env.example`
+* `README.md`
+
+No se deben subir:
+
+* `.env`
+* `node_modules`
+* Contraseñas
+* Credenciales de servicios externos
+* Información sensible
 
 ---
 
