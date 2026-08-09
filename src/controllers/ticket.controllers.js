@@ -4,6 +4,7 @@ import {
     cancelTicketService,
     getTicketsByEventService
 } from "../services/ticket.services.js";
+import TicketDTO from "../dto/ticket.dto.js";
 
 export const createTicket = async (req, res) => {
     try {
@@ -35,9 +36,17 @@ export const createTicket = async (req, res) => {
 export const getMyTickets = async (req, res) => {
     try {
         const tickets = await getMyTicketsService(req.user.id);
-        res.status(200).json(tickets);
+
+        const ticketsDTO = tickets.map(
+            ticket => new TicketDTO(ticket)
+        );
+
+        res.status(200).json(ticketsDTO);
+
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            error: error.message
+        });
     }
 };
 
