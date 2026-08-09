@@ -5,6 +5,7 @@ import {
     updateEventService,
     updateEventStatusService
 } from "../services/event.services.js";
+import EventDTO from "../dto/event.dto.js";
 
 export const getEvents = async (req, res) => {
 
@@ -67,8 +68,13 @@ export const getEvents = async (req, res) => {
             options
         );
 
+        const eventsDTO = result.events.map(
+            event => new EventDTO(event)
+        );
+
+
         res.status(200).json({
-            data: result.events,
+            data: eventsDTO,
             page: Number(page),
             limit: Number(limit),
             total: result.total,
