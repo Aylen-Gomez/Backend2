@@ -1,4 +1,5 @@
 import { generateToken } from "../utils/jwt.js";
+import UserDTO from "../dto/user.dto.js";
 
 export const register = async (req, res) => {
 
@@ -10,7 +11,6 @@ export const register = async (req, res) => {
     });
 
 };
-
 
 export const login = async (req, res) => {
 
@@ -31,13 +31,11 @@ export const login = async (req, res) => {
             secure: process.env.NODE_ENV === "production"
         });
 
+        const userDTO = new UserDTO(user);
+
         res.status(200).json({
             message: "Login exitoso",
-            user: {
-                id: user._id,
-                email: user.email,
-                role: user.role
-            }
+            user: userDTO
         });
 
     } catch (error) {
@@ -50,17 +48,13 @@ export const login = async (req, res) => {
 
 };
 
-
 export const current = async (req, res) => {
 
-    res.status(200).json({
-        id: req.user.id,
-        email: req.user.email,
-        role: req.user.role
-    });
+    const userDTO = new UserDTO(req.user);
+
+    res.status(200).json(userDTO);
 
 };
-
 
 export const logout = async (req, res) => {
 
