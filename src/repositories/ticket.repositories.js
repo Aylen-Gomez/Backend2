@@ -1,26 +1,25 @@
-import Ticket from "../models/Ticket.js";
+import TicketDAO from "../dao/ticket.dao.js";
 
 export default class TicketRepository {
 
+    constructor() {
+        this.ticketDAO = new TicketDAO();
+    }
+
     async create(ticketData) {
-        return await Ticket.create(ticketData);
+        return await this.ticketDAO.create(ticketData);
     }
 
     async findByUser(userId) {
-        return await Ticket.find({
-            user: userId
-        }).populate(
-            "event",
-            "title date location"
-        );
+        return await this.ticketDAO.findByUser(userId);
     }
 
     async findById(id) {
-        return await Ticket.findById(id);
+        return await this.ticketDAO.findById(id);
     }
 
     async findActiveTicket(userId, eventId) {
-        return await Ticket.findOne({
+        return await this.ticketDAO.findOne({
             user: userId,
             event: eventId,
             status: {
@@ -30,36 +29,14 @@ export default class TicketRepository {
     }
 
     async countReserved(eventId) {
-        const tickets = await Ticket.find({
-            event: eventId,
-            status: {
-                $ne: "cancelled"
-            }
-        });
-
-        let total = 0;
-
-        tickets.forEach(ticket => {
-            total += ticket.quantity;
-        });
-
-        return total;
+        return await this.ticketDAO.countActive(eventId);
     }
 
     async findByEvent(eventId) {
-        return await Ticket.find({
-            event: eventId
-        }).populate(
-            "user",
-            "first_name last_name email"
-        );
+        return await this.ticketDAO.findByEvent(eventId);
     }
 
     async update(id, data) {
-        return await Ticket.findByIdAndUpdate(
-            id,
-            data,
-            { returnDocument: "after" }
-        );
+        return await this.ticketDAO.update(id, data);
     }
 }
