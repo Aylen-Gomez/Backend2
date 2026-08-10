@@ -26,9 +26,14 @@ export default class TicketDAO {
     async findByEvent(eventId) {
         return await Ticket.find({
             event: eventId
-        }).populate(
+        })
+        .populate(
             "user",
             "first_name last_name email"
+        )
+        .populate(
+            "event",
+            "title date location"
         );
     }
 

@@ -81,7 +81,12 @@ export const getTicketsByEvent = async (req, res) => {
             req.user
         );
 
-        res.status(200).json(tickets);
+        const ticketsDTO = tickets.map(
+            ticket => new TicketDTO(ticket)
+        );
+
+        res.status(200).json(ticketsDTO);
+        
     } catch (error) {
         if (error.message === "Evento no encontrado") {
             return res.status(404).json({ error: error.message });
