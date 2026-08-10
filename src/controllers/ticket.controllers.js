@@ -16,9 +16,11 @@ export const createTicket = async (req, res) => {
             quantity
         );
 
+        const ticketDTO = new TicketDTO(ticket);
+
         res.status(201).json({
             message: "Inscripción realizada correctamente",
-            ticket
+            ticket: ticketDTO
         });
     } catch (error) {
         if (error.message === "Evento no encontrado") {
