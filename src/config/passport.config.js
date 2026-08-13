@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { registerUser, loginUser } from "../services/session.services.js";
+import env from "./env.js";
 
 export const initializePassport = () => {
 
@@ -63,30 +64,30 @@ export const initializePassport = () => {
     );
 
     passport.use(
-    "current",
-    new JwtStrategy(
-        {
-            jwtFromRequest: ExtractJwt.fromExtractors([
-                (req) => {
-                    return req.cookies.currentUser;
+        "current",
+        new JwtStrategy(
+            {
+                jwtFromRequest: ExtractJwt.fromExtractors([
+                    (req) => {
+                        return req.cookies.currentUser;
+                    }
+                ]),
+                secretOrKey: env.JWT_SECRET
+            },
+            async (payload, done) => {
+
+                try {
+
+                    return done(null, payload);
+
+                } catch (error) {
+
+                    return done(error, false);
+
                 }
-            ]),
-            secretOrKey: process.env.JWT_SECRET
-        },
-        async (payload, done) => {
-
-            try {
-
-                return done(null, payload);
-
-            } catch (error) {
-
-                return done(error, false);
 
             }
-
-        }
-    )
-);
+        )
+    );
 
 };
