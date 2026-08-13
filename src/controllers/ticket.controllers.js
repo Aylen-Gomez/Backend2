@@ -59,9 +59,11 @@ export const cancelTicket = async (req, res) => {
             req.user
         );
 
+        const ticketDTO = new TicketDTO(ticket);
+
         res.status(200).json({
             message: "Ticket cancelado correctamente",
-            ticket
+            ticket: ticketDTO
         });
     } catch (error) {
         if (error.message === "Ticket no encontrado") {
