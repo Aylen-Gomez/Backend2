@@ -147,30 +147,11 @@ export const updateEvent = async (req, res) => {
 
     try {
 
-        const event = await getEventById(req.params.id);
-
-        if (!event) {
-
-            return res.status(404).json({
-                error: "Evento no encontrado"
-            });
-
-        }
-
-        if (
-            req.user.role !== "admin" &&
-            event.organizer.toString() !== req.user.id
-        ) {
-
-            return res.status(403).json({
-                error: "No tenés permisos para modificar este evento"
-            });
-
-        }
-
         const updatedEvent = await updateEventService(
             req.params.id,
-            req.body
+            req.body,
+            req.user.id,
+            req.user.role
         );
 
         res.status(200).json({
@@ -180,7 +161,9 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
 
-        res.status(400).json({
+        const status = error.statusCode || 400;
+
+        res.status(status).json({
             error: error.message
         });
 
@@ -192,30 +175,11 @@ export const updateEventStatus = async (req, res) => {
 
     try {
 
-        const event = await getEventById(req.params.id);
-
-        if (!event) {
-
-            return res.status(404).json({
-                error: "Evento no encontrado"
-            });
-
-        }
-
-        if (
-            req.user.role !== "admin" &&
-            event.organizer.toString() !== req.user.id
-        ) {
-
-            return res.status(403).json({
-                error: "No tenés permisos para modificar este evento"
-            });
-
-        }
-
         const updatedEvent = await updateEventStatusService(
             req.params.id,
-            req.body.status
+            req.body.status,
+            req.user.id,
+            req.user.role
         );
 
         res.status(200).json({
@@ -225,7 +189,9 @@ export const updateEventStatus = async (req, res) => {
 
     } catch (error) {
 
-        res.status(400).json({
+        const status = error.statusCode || 400;
+
+        res.status(status).json({
             error: error.message
         });
 

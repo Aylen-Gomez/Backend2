@@ -54,12 +54,23 @@ export const getEventById = async (id) => {
 
 };
 
-export const updateEventService = async (id, data) => {
+export const updateEventService = async (id, data, userId, userRole) => {
 
     const event = await eventRepository.findById(id);
 
     if (!event) {
-        throw new Error("Evento no encontrado");
+        const error = new Error("Evento no encontrado");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (
+        userRole !== "admin" &&
+        event.organizer.toString() !== userId
+    ) {
+        const error = new Error("No tenés permisos para modificar este evento");
+        error.statusCode = 403;
+        throw error;
     }
 
     if (event.status === "cancelled") {
@@ -70,12 +81,23 @@ export const updateEventService = async (id, data) => {
 
 };
 
-export const updateEventStatusService = async (id, status) => {
+export const updateEventStatusService = async (id, status, userId, userRole) => {
 
     const event = await eventRepository.findById(id);
 
     if (!event) {
-        throw new Error("Evento no encontrado");
+        const error = new Error("Evento no encontrado");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    if (
+        userRole !== "admin" &&
+        event.organizer.toString() !== userId
+    ) {
+        const error = new Error("No tenés permisos para modificar este evento");
+        error.statusCode = 403;
+        throw error;
     }
 
     if (event.status === "cancelled") {
