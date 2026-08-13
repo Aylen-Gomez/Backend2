@@ -1,5 +1,6 @@
 import { generateToken } from "../utils/jwt.js";
 import UserDTO from "../dto/user.dto.js";
+import env from "../config/env.js";
 
 export const register = async (req, res) => {
 
@@ -28,7 +29,7 @@ export const login = async (req, res) => {
             httpOnly: true,
             sameSite: "lax",
             maxAge: 3600000,
-            secure: process.env.NODE_ENV === "production"
+            secure: env.NODE_ENV === "production"
         });
 
         const userDTO = new UserDTO(user);
