@@ -3,11 +3,11 @@ import UserDTO from "../dto/user.dto.js";
 
 export const register = async (req, res) => {
 
-    const { password, ...safeUser } = req.user.toObject();
+    const userDTO = new UserDTO(req.user);
 
     res.status(201).json({
         message: "Usuario registrado correctamente",
-        user: safeUser
+        user: userDTO
     });
 
 };
