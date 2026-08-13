@@ -53,7 +53,7 @@ export const createTicketService = async (userId, eventId, quantity) => {
         event: eventId,
         quantity,
         reservationCode,
-        status: "confirmed"
+        status: "active"
     });
 
     const user = await userRepository.findById(userId);
