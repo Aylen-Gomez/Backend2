@@ -67,6 +67,137 @@ npm start
 
 ---
 
+# Arquitectura
+
+El proyecto utiliza una arquitectura en capas basada en **DAO, Repository, Services, Controllers y DTO**, con el objetivo de separar responsabilidades y mantener el código desacoplado.
+
+La estructura principal del proyecto es:
+
+```text
+src/
+├── config/
+├── controllers/
+├── dao/
+├── dto/
+├── middlewares/
+├── models/
+├── repositories/
+├── routes/
+├── services/
+├── utils/
+└── app.js
+```
+
+El flujo general de una petición es:
+
+```text
+Routes
+   ↓
+Controllers
+   ↓
+Services
+   ↓
+Repositories
+   ↓
+DAO
+   ↓
+Models
+   ↓
+MongoDB
+```
+
+Los **DTO** intervienen en las respuestas para controlar qué información se expone al cliente.
+
+## Responsabilidad de cada capa
+
+### Controllers
+
+Los Controllers se encargan de coordinar las peticiones HTTP.
+
+Sus responsabilidades principales son:
+
+* Extraer información del `body`, `params` y `query`.
+* Obtener la información del usuario autenticado cuando corresponde.
+* Llamar al Service correspondiente.
+* Construir la respuesta HTTP.
+* Devolver el resultado al cliente.
+
+Los Controllers no acceden directamente a los modelos de Mongoose ni contienen la lógica principal de negocio.
+
+### Services
+
+Los Services concentran la lógica de negocio de la aplicación.
+
+Entre sus responsabilidades se encuentran:
+
+* Validar reglas de negocio.
+* Controlar estados de los eventos.
+* Validar disponibilidad de cupos.
+* Evitar inscripciones duplicadas.
+* Validar permisos sobre recursos propios.
+* Gestionar la cancelación de tickets.
+* Coordinar el envío de emails.
+* Utilizar los Repositories para acceder a los datos.
+
+Los Services no acceden directamente a los modelos de Mongoose ni a los DAO.
+
+### Repositories
+
+Los Repositories funcionan como una capa intermedia orientada al dominio entre los Services y los DAO.
+
+Cada entidad principal posee su Repository correspondiente:
+
+* `UserRepository`
+* `EventRepository`
+* `TicketRepository`
+
+Los Repositories utilizan los DAO y exponen operaciones orientadas al dominio, por ejemplo:
+
+* `findByEmail`
+* `findPublishedEvents`
+* `countActiveTickets`
+* `cancelTicket`
+
+Los Repositories no importan directamente modelos de Mongoose.
+
+### DAO
+
+Los DAO son responsables del acceso directo a la base de datos.
+
+Cada entidad principal cuenta con su DAO correspondiente:
+
+* `UserDAO`
+* `EventDAO`
+* `TicketDAO`
+
+Los DAO exponen operaciones de acceso a datos, como:
+
+* `findById`
+* `findOne`
+* `create`
+* `update`
+* `count`
+
+Los modelos de Mongoose son importados directamente únicamente por esta capa.
+
+### DTO
+
+Los DTO controlan la información que se devuelve en las respuestas de la API.
+
+El proyecto cuenta con:
+
+* `UserDTO`
+* `EventDTO`
+* `TicketDTO`
+
+Los DTO permiten evitar la exposición de información sensible y mantener respuestas controladas.
+
+`UserDTO` evita que la contraseña del usuario sea incluida en las respuestas.
+
+`TicketDTO` también filtra la información cuando el ticket utiliza referencias mediante `populate`, evitando exponer la contraseña u otros datos innecesarios del usuario relacionado.
+
+---
+
 # Roles implementados
 
 El sistema cuenta con tres tipos de usuarios:
@@ -418,7 +549,7 @@ Los datos del evento se obtienen mediante `populate`, incluyendo:
 * `date`
 * `location`
 
-No se exponen datos sensibles de otros usuarios.
+Los datos del usuario relacionado son filtrados mediante `TicketDTO`, por lo que no se expone la contraseña.
 
 ---
 
@@ -491,7 +622,9 @@ El proyecto incluye un archivo `.env.example` para indicar las variables necesar
 
 # Endpoints disponibles
 
-## Registrar usuario
+## Sesiones
+
+### Registrar usuario
 
 **POST**
 
@@ -499,9 +632,7 @@ El proyecto incluye un archivo `.env.example` para indicar las variables necesar
 /api/sessions/register
 ```
 
----
-
-## Login
+### Login
 
 **POST**
 
@@ -511,9 +642,7 @@ El proyecto incluye un archivo `.env.example` para indicar las variables necesar
 
 Genera un JWT y crea la cookie HTTP Only `currentUser`.
 
----
-
-## Usuario autenticado
+### Usuario autenticado
 
 **GET**
 
@@ -523,9 +652,9 @@ Genera un JWT y crea la cookie HTTP Only `currentUser`.
 
 Requiere autenticación.
 
----
+La respuesta utiliza `UserDTO` y no expone la contraseña del usuario.
 
-## Logout
+### Logout
 
 **POST**
 
@@ -551,8 +680,6 @@ Ruta pública.
 
 Permite filtros, paginación y ordenamiento.
 
----
-
 ## Obtener un evento
 
 **GET**
@@ -562,8 +689,6 @@ Permite filtros, paginación y ordenamiento.
 ```
 
 Ruta pública.
-
----
 
 ## Crear evento
 
@@ -578,8 +703,6 @@ Acceso:
 * `organizer`
 * `admin`
 
----
-
 ## Modificar evento
 
 **PUT**
@@ -592,8 +715,6 @@ Permisos:
 
 * `organizer`: únicamente eventos propios.
 * `admin`: cualquier evento.
-
----
 
 ## Cambiar estado del evento
 
@@ -629,8 +750,6 @@ Body:
 }
 ```
 
----
-
 ## Consultar mis tickets
 
 **GET**
@@ -645,8 +764,6 @@ Acceso:
 
 Devuelve únicamente los tickets del usuario autenticado.
 
----
-
 ## Consultar tickets de un evento
 
 **GET**
@@ -660,8 +777,6 @@ Acceso:
 * `organizer`: únicamente eventos propios.
 * `admin`: cualquier evento.
 
----
-
 ## Cancelar ticket
 
 **PATCH**
@@ -674,6 +789,8 @@ Acceso:
 
 * Dueño del ticket.
 * `admin`.
+
+La respuesta utiliza `TicketDTO`.
 
 ---
 
@@ -693,13 +810,13 @@ admin
 
 ---
 
-# Códigos de respuesta
+# Manejo de errores
+
+La API diferencia los principales tipos de errores mediante códigos HTTP.
 
 ## 200 OK
 
 La operación fue realizada correctamente.
-
----
 
 ## 201 Created
 
@@ -709,11 +826,9 @@ Se utiliza cuando se crea correctamente un recurso, por ejemplo:
 * evento
 * ticket
 
----
-
 ## 400 Bad Request
 
-Se utiliza cuando existen errores de validación o reglas de negocio.
+Se utiliza cuando existen datos inválidos o errores de validación.
 
 Ejemplos:
 
@@ -724,8 +839,6 @@ Ejemplos:
 * No hay cupos disponibles.
 * Usuario ya inscripto.
 
----
-
 ## 401 Unauthorized
 
 Se devuelve cuando el usuario no posee una sesión válida.
@@ -734,8 +847,6 @@ Ejemplos:
 
 * Acceder a rutas protegidas sin iniciar sesión.
 * Cookie JWT inexistente o inválida.
-
----
 
 ## 403 Forbidden
 
@@ -750,8 +861,6 @@ Ejemplos:
 * Un `organizer` intentando consultar los tickets de un evento que no le pertenece.
 * Acceder a una ruta exclusiva para `admin`.
 
----
-
 ## 404 Not Found
 
 Se devuelve cuando el recurso solicitado no existe.
@@ -761,51 +870,17 @@ Ejemplos:
 * Evento inexistente.
 * Ticket inexistente.
 
----
+## 409 Conflict
 
-# Arquitectura
+Se utiliza cuando existe un conflicto con el estado actual del recurso.
 
-El proyecto utiliza arquitectura en capas.
+Ejemplo:
 
-Estructura principal:
+* Usuario que intenta realizar una segunda inscripción activa al mismo evento.
 
-```text
-src/
-├── config/
-├── controllers/
-├── dao/
-├── middlewares/
-├── models/
-├── repositories/
-├── routes/
-├── services/
-├── utils/
-└── app.js
-```
+## 500 Internal Server Error
 
-Flujo general:
-
-```text
-Routes
-   ↓
-Controllers
-   ↓
-Services
-   ↓
-Repositories
-   ↓
-DAO
-   ↓
-Models
-   ↓
-MongoDB
-```
-
-La lógica de negocio se implementa principalmente en **Services**.
-
-El acceso a datos se realiza mediante **Repositories** y **DAO**.
-
-Los **Controllers** gestionan las peticiones y respuestas HTTP.
+Se utiliza para errores internos inesperados del servidor.
 
 ---
 
@@ -823,6 +898,27 @@ Los **Controllers** gestionan las peticiones y respuestas HTTP.
 * No se exponen contraseñas ni información sensible.
 * No se almacenan credenciales de email directamente en el código.
 * Los tickets utilizan referencias a usuarios y eventos en lugar de objetos embebidos.
+* Los DTO controlan la información expuesta en las respuestas.
+
+---
+
+# Casos de prueba de la Pre-entrega 8
+
+Antes de la entrega se verificaron los siguientes escenarios:
+
+1. Registro → usuario creado correctamente.
+2. Login → generación de JWT y cookie de autenticación.
+3. Crear evento.
+4. Publicar evento.
+5. Inscribirse a un evento.
+6. Consultar mis tickets.
+7. Respuesta de ticket mediante DTO.
+8. Usuario no autenticado → `401 Unauthorized`.
+9. Usuario autenticado sin permisos → `403 Forbidden`.
+10. Ticket duplicado → `409 Conflict`.
+11. Cancelar ticket → `200 OK`.
+12. Ticket cancelado conserva `cancelledAt`.
+13. Ticket con `populate` no expone la contraseña del usuario.
 
 ---
 
@@ -852,23 +948,6 @@ No se deben incluir credenciales reales en este archivo.
 
 ---
 
-# Casos de prueba de la Pre-entrega 7
-
-Antes de la entrega se deben verificar los siguientes escenarios:
-
-1. Inscripción exitosa y recepción del email de confirmación.
-2. Inscripción sin sesión → `401 Unauthorized`.
-3. Inscripción a evento inexistente → `404 Not Found`.
-4. Inscripción a evento cancelado o finalizado → error de negocio.
-5. Inscripción sin cupos suficientes → error de negocio.
-6. Inscripción duplicada activa → error de negocio.
-7. Cancelación propia → el ticket queda `cancelled` y el cupo vuelve a estar disponible.
-8. Usuario intentando cancelar un ticket ajeno → `403 Forbidden`.
-9. Usuario común intentando consultar tickets de un evento → `403 Forbidden`.
-10. Organizer intentando consultar tickets de un evento ajeno → `403 Forbidden`.
-
----
-
 # Entrega
 
 El repositorio debe incluir:
@@ -891,5 +970,3 @@ No se deben subir:
 # Autor
 
 **Aylen Gomez**
-
-
