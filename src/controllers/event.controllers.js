@@ -149,7 +149,7 @@ export const updateEvent = async (req, res, next) => {
 
         res.status(200).json({
             message: "Evento actualizado correctamente",
-            event: updatedEvent
+            event: new EventDTO(updatedEvent)
         });
 
     } catch (error) {
