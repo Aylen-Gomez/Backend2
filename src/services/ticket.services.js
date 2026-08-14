@@ -101,7 +101,9 @@ export const cancelTicketService = async (ticketId, user) => {
         user.role !== "admin" &&
         ticket.user.toString() !== user.id
     ) {
-        throw new Error("No tenés permisos para cancelar este ticket");
+        const error = new Error("No tenés permisos para cancelar este ticket");
+        error.statusCode = 403;
+        throw error;
     }
 
     return await ticketRepository.update(ticketId, {
