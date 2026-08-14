@@ -74,7 +74,9 @@ export const updateEventService = async (id, data, userId, userRole) => {
     }
 
     if (event.status === "cancelled") {
-        throw new Error("No se puede modificar un evento cancelado");
+        const error = new Error("No se puede modificar un evento cancelado");
+        error.statusCode = 400;
+        throw error;
     }
 
     return await eventRepository.update(id, data);
