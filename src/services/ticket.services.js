@@ -25,7 +25,9 @@ export const createTicketService = async (userId, eventId, quantity) => {
 );
 
     if (activeTicket) {
-        throw new Error("Ya estás inscripto en este evento");
+        const error = new Error("Ya estás inscripto en este evento");
+        error.statusCode = 409;
+        throw error;
     }
 
     const reserved = await ticketRepository.countReserved(eventId);
