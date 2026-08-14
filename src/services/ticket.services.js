@@ -33,7 +33,9 @@ export const createTicketService = async (userId, eventId, quantity) => {
     const reserved = await ticketRepository.countReserved(eventId);
 
     if (reserved + quantity > event.capacity) {
-        throw new Error("No hay cupos disponibles");
+        const error = new Error("No hay cupos disponibles");
+        error.statusCode = 409;
+        throw error;
     }
 
     if (event.status === "cancelled") {
