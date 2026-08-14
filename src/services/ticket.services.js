@@ -110,7 +110,9 @@ export const getTicketsByEventService = async (eventId, user) => {
     const event = await getEventById(eventId);
 
     if (!event) {
-        throw new Error("Evento no encontrado");
+        const error = new Error("Evento no encontrado");
+        error.statusCode = 404;
+        throw error;
     }
 
     if (
