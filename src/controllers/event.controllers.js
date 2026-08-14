@@ -125,7 +125,7 @@ export const createEvent = async (req, res, next) => {
 
         res.status(201).json({
             message: "Evento creado correctamente",
-            event
+            event: new EventDTO(event)
         });
 
     } catch (error) {
