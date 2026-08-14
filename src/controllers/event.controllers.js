@@ -7,7 +7,7 @@ import {
 } from "../services/event.services.js";
 import EventDTO from "../dto/event.dto.js";
 
-export const getEvents = async (req, res) => {
+export const getEvents = async (req, res, next) => {
 
     try {
 
@@ -72,7 +72,6 @@ export const getEvents = async (req, res) => {
             event => new EventDTO(event)
         );
 
-
         res.status(200).json({
             data: eventsDTO,
             page: Number(page),
@@ -83,15 +82,13 @@ export const getEvents = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
-            error: error.message
-        });
+        next(error);
 
     }
 
 };
 
-export const getEventByIdController = async (req, res) => {
+export const getEventByIdController = async (req, res, next) => {
 
     try {
 
@@ -109,15 +106,13 @@ export const getEventByIdController = async (req, res) => {
 
     } catch (error) {
 
-        res.status(500).json({
-            error: error.message
-        });
+        next(error);
 
     }
 
 };
 
-export const createEvent = async (req, res) => {
+export const createEvent = async (req, res, next) => {
 
     try {
 
@@ -135,15 +130,13 @@ export const createEvent = async (req, res) => {
 
     } catch (error) {
 
-        res.status(400).json({
-            error: error.message
-        });
+        next(error);
 
     }
 
 };
 
-export const updateEvent = async (req, res) => {
+export const updateEvent = async (req, res, next) => {
 
     try {
 
@@ -161,17 +154,13 @@ export const updateEvent = async (req, res) => {
 
     } catch (error) {
 
-        const status = error.statusCode || 400;
-
-        res.status(status).json({
-            error: error.message
-        });
+        next(error);
 
     }
 
 };
 
-export const updateEventStatus = async (req, res) => {
+export const updateEventStatus = async (req, res, next) => {
 
     try {
 
@@ -189,11 +178,7 @@ export const updateEventStatus = async (req, res) => {
 
     } catch (error) {
 
-        const status = error.statusCode || 400;
-
-        res.status(status).json({
-            error: error.message
-        });
+        next(error);
 
     }
 
