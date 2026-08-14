@@ -88,7 +88,9 @@ export const cancelTicketService = async (ticketId, user) => {
     const ticket = await ticketRepository.findById(ticketId);
 
     if (!ticket) {
-        throw new Error("Ticket no encontrado");
+        const error = new Error("Ticket no encontrado");
+        error.statusCode = 404;
+        throw error;
     }
 
     if (ticket.status === "cancelled") {
