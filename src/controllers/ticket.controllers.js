@@ -6,7 +6,7 @@ import {
 } from "../services/ticket.services.js";
 import TicketDTO from "../dto/ticket.dto.js";
 
-export const createTicket = async (req, res) => {
+export const createTicket = async (req, res, next) => {
     try {
         const { quantity } = req.body;
 
@@ -23,19 +23,11 @@ export const createTicket = async (req, res) => {
             ticket: ticketDTO
         });
     } catch (error) {
-        if (error.message === "Evento no encontrado") {
-            return res.status(404).json({ error: error.message });
-        }
-
-        if (error.message === "Ya estás inscripto en este evento") {
-            return res.status(409).json({ error: error.message });
-        }
-
-        res.status(400).json({ error: error.message });
+        next(error);
     }
 };
 
-export const getMyTickets = async (req, res) => {
+export const getMyTickets = async (req, res, next) => {
     try {
         const tickets = await getMyTicketsService(req.user.id);
 
@@ -46,13 +38,11 @@ export const getMyTickets = async (req, res) => {
         res.status(200).json(ticketsDTO);
 
     } catch (error) {
-        res.status(500).json({
-            error: error.message
-        });
+        next(error);
     }
 };
 
-export const cancelTicket = async (req, res) => {
+export const cancelTicket = async (req, res, next) => {
     try {
         const ticket = await cancelTicketService(
             req.params.tid,
@@ -66,19 +56,11 @@ export const cancelTicket = async (req, res) => {
             ticket: ticketDTO
         });
     } catch (error) {
-        if (error.message === "Ticket no encontrado") {
-            return res.status(404).json({ error: error.message });
-        }
-
-        if (error.message === "No tenés permisos para cancelar este ticket") {
-            return res.status(403).json({ error: error.message });
-        }
-
-        res.status(400).json({ error: error.message });
+        next(error);
     }
 };
 
-export const getTicketsByEvent = async (req, res) => {
+export const getTicketsByEvent = async (req, res, next) => {
     try {
         const tickets = await getTicketsByEventService(
             req.params.eid,
@@ -90,16 +72,8 @@ export const getTicketsByEvent = async (req, res) => {
         );
 
         res.status(200).json(ticketsDTO);
-        
+
     } catch (error) {
-        if (error.message === "Evento no encontrado") {
-            return res.status(404).json({ error: error.message });
-        }
-
-        if (error.message === "No tenés permisos para ver los tickets de este evento") {
-            return res.status(403).json({ error: error.message });
-        }
-
-        res.status(500).json({ error: error.message });
+        next(error);
     }
 };
