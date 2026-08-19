@@ -10,13 +10,17 @@ const userRepository = new UserRepository();
 export const createTicketService = async (userId, eventId, quantity) => {
 
     if (quantity <= 0) {
-        throw new Error("La cantidad debe ser mayor a 0");
+        const error = new Error("La cantidad debe ser mayor a 0");
+        error.statusCode = 400;
+        throw error;
     }
 
     const event = await getEventById(eventId);
 
     if (!event) {
-        throw new Error("Evento no encontrado");
+        const error = new Error("Evento no encontrado");
+        error.statusCode = 404;
+        throw error;
     }
 
     const activeTicket = await ticketRepository.findActiveTicket(
@@ -39,15 +43,21 @@ export const createTicketService = async (userId, eventId, quantity) => {
     }
 
     if (event.status === "cancelled") {
-    throw new Error("No es posible inscribirse a un evento cancelado");
+        const error = new Error("No es posible inscribirse a un evento cancelado");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (event.status === "finished") {
-        throw new Error("No es posible inscribirse a un evento finalizado");
+        const error = new Error("No es posible inscribirse a un evento finalizado");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (event.status !== "published") {
-        throw new Error("Solo es posible inscribirse a eventos publicados");
+        const error = new Error("Solo es posible inscribirse a eventos publicados");
+        error.statusCode = 400;
+        throw error;
     }
 
     const reservationCode = crypto.randomUUID();
@@ -94,7 +104,9 @@ export const cancelTicketService = async (ticketId, user) => {
     }
 
     if (ticket.status === "cancelled") {
-        throw new Error("El ticket ya está cancelado");
+        const error = new Error("El ticket ya está cancelado");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (
@@ -127,7 +139,9 @@ export const getTicketsByEventService = async (eventId, user) => {
         user.role !== "admin" &&
         event.organizer.toString() !== user.id
     ) {
-        throw new Error("No tenés permisos para ver los tickets de este evento");
+        const error = new Error("No tenés permisos para ver los tickets de este evento");
+        error.statusCode = 403;
+        throw error;
     }
 
     return await ticketRepository.findByEvent(eventId);
