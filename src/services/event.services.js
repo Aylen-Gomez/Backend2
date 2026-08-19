@@ -12,15 +12,21 @@ const validStatus = [
 export const createEventService = async (data) => {
 
     if (new Date(data.date) < new Date()) {
-        throw new Error("No se puede crear un evento con una fecha pasada");
+        const error = new Error("No se puede crear un evento con una fecha pasada");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (data.capacity <= 0) {
-        throw new Error("La capacidad debe ser mayor a 0");
+        const error = new Error("La capacidad debe ser mayor a 0");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (data.price < 0) {
-        throw new Error("El precio no puede ser negativo");
+        const error = new Error("El precio no puede ser negativo");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (!data.status) {
@@ -28,7 +34,9 @@ export const createEventService = async (data) => {
     }
 
     if (!validStatus.includes(data.status)) {
-    throw new Error("Estado inválido");
+        const error = new Error("Estado inválido");
+        error.statusCode = 400;
+        throw error;
     }
 
     return await eventRepository.create(data);
@@ -103,18 +111,24 @@ export const updateEventStatusService = async (id, status, userId, userRole) => 
     }
 
     if (event.status === "cancelled") {
-        throw new Error("No se puede modificar un evento cancelado");
+        const error = new Error("No se puede modificar un evento cancelado");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (!validStatus.includes(status)) {
-    throw new Error("Estado inválido");
+        const error = new Error("Estado inválido");
+        error.statusCode = 400;
+        throw error;
     }
 
     if (
         status === "published" &&
         (event.status === "finished" || event.status === "cancelled")
     ) {
-        throw new Error("No se puede publicar un evento finalizado o cancelado");
+        const error = new Error("No se puede publicar un evento finalizado o cancelado");
+        error.statusCode = 400;
+        throw error;
     }
 
     return await eventRepository.update(id, { status });
