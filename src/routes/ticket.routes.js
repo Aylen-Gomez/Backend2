@@ -4,7 +4,6 @@ import passport from "passport";
 import {
     getMyTickets,
     cancelTicket,
-    getTicketsByEvent
 } from "../controllers/ticket.controllers.js";
 
 const router = Router();
